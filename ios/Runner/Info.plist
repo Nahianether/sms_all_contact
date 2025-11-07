@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Sms All Contact</string>
+	<string>Bulk SMS Sender</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +45,55 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Privacy permissions and usage descriptions -->
+	<key>NSContactsUsageDescription</key>
+	<string>This app needs access to your contacts to send SMS messages to selected contacts from your contact list.</string>
+	
+	<key>NSAppleMusicUsageDescription</key>
+	<string>This app does not use music, but the permission may be required by dependencies.</string>
+	
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app does not access photos, but the permission may be required by dependencies.</string>
+	
+	<key>NSCameraUsageDescription</key>
+	<string>This app does not use the camera, but the permission may be required by dependencies.</string>
+	
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app does not use the microphone, but the permission may be required by dependencies.</string>
+	
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app does not use location services, but the permission may be required by dependencies.</string>
+	
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app does not use location services, but the permission may be required by dependencies.</string>
+	
+	<!-- App Transport Security Settings -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+	
+	<!-- Background modes for processing -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-processing</string>
+		<string>background-fetch</string>
+	</array>
+	
+	<!-- Required device capabilities -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	
+	<!-- Support for dark mode -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
 </dict>
 </plist>
