@@ -8,16 +8,16 @@ import 'models/sms_history.dart';
 import 'models/sms_template.dart';
 
 // Theme Provider
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
-  return ThemeNotifier();
-});
+final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);
 
-class ThemeNotifier extends StateNotifier<ThemeMode> {
-  ThemeNotifier() : super(ThemeMode.system) {
-    _loadTheme();
-  }
-
+class ThemeNotifier extends Notifier<ThemeMode> {
   static const String _themeKey = 'theme_mode';
+
+  @override
+  ThemeMode build() {
+    _loadTheme();
+    return ThemeMode.system;
+  }
 
   void _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
@@ -33,13 +33,14 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
 }
 
 // Contacts Provider
-final contactsProvider = StateNotifierProvider<ContactsNotifier, AsyncValue<List<Contact>>>((ref) {
-  return ContactsNotifier();
-});
+final contactsProvider =
+    NotifierProvider<ContactsNotifier, AsyncValue<List<Contact>>>(ContactsNotifier.new);
 
-class ContactsNotifier extends StateNotifier<AsyncValue<List<Contact>>> {
-  ContactsNotifier() : super(const AsyncValue.loading()) {
+class ContactsNotifier extends Notifier<AsyncValue<List<Contact>>> {
+  @override
+  AsyncValue<List<Contact>> build() {
     loadContacts();
+    return const AsyncValue.loading();
   }
 
   Future<void> loadContacts() async {
@@ -49,9 +50,8 @@ class ContactsNotifier extends StateNotifier<AsyncValue<List<Contact>>> {
           withProperties: true,
           withPhoto: false,
         );
-        final contactsWithPhones = contacts
-            .where((contact) => contact.phones.isNotEmpty)
-            .toList();
+        final contactsWithPhones =
+            contacts.where((contact) => contact.phones.isNotEmpty).toList();
         state = AsyncValue.data(contactsWithPhones);
       } else {
         state = AsyncValue.error('Contacts permission denied', StackTrace.current);
@@ -68,12 +68,12 @@ class ContactsNotifier extends StateNotifier<AsyncValue<List<Contact>>> {
 }
 
 // Selected Contacts Provider
-final selectedContactsProvider = StateNotifierProvider<SelectedContactsNotifier, List<Contact>>((ref) {
-  return SelectedContactsNotifier();
-});
+final selectedContactsProvider =
+    NotifierProvider<SelectedContactsNotifier, List<Contact>>(SelectedContactsNotifier.new);
 
-class SelectedContactsNotifier extends StateNotifier<List<Contact>> {
-  SelectedContactsNotifier() : super([]);
+class SelectedContactsNotifier extends Notifier<List<Contact>> {
+  @override
+  List<Contact> build() => [];
 
   void toggleContact(Contact contact) {
     if (state.contains(contact)) {
@@ -105,12 +105,12 @@ class SelectedContactsNotifier extends StateNotifier<List<Contact>> {
 }
 
 // Manual Numbers Provider
-final manualNumbersProvider = StateNotifierProvider<ManualNumbersNotifier, List<String>>((ref) {
-  return ManualNumbersNotifier();
-});
+final manualNumbersProvider =
+    NotifierProvider<ManualNumbersNotifier, List<String>>(ManualNumbersNotifier.new);
 
-class ManualNumbersNotifier extends StateNotifier<List<String>> {
-  ManualNumbersNotifier() : super([]);
+class ManualNumbersNotifier extends Notifier<List<String>> {
+  @override
+  List<String> build() => [];
 
   void addNumbers(String numbersText) {
     final numbers = _parseNumbers(numbersText);
@@ -151,12 +151,11 @@ class ManualNumbersNotifier extends StateNotifier<List<String>> {
 }
 
 // Message Provider
-final messageProvider = StateNotifierProvider<MessageNotifier, String>((ref) {
-  return MessageNotifier();
-});
+final messageProvider = NotifierProvider<MessageNotifier, String>(MessageNotifier.new);
 
-class MessageNotifier extends StateNotifier<String> {
-  MessageNotifier() : super('');
+class MessageNotifier extends Notifier<String> {
+  @override
+  String build() => '';
 
   void updateMessage(String message) {
     state = message;
@@ -168,9 +167,7 @@ class MessageNotifier extends StateNotifier<String> {
 }
 
 // SMS Sending State Provider
-final smsStateProvider = StateNotifierProvider<SmsStateNotifier, SmsState>((ref) {
-  return SmsStateNotifier();
-});
+final smsStateProvider = NotifierProvider<SmsStateNotifier, SmsState>(SmsStateNotifier.new);
 
 class SmsState {
   final bool isSending;
@@ -212,8 +209,9 @@ class SmsState {
   }
 }
 
-class SmsStateNotifier extends StateNotifier<SmsState> {
-  SmsStateNotifier() : super(const SmsState());
+class SmsStateNotifier extends Notifier<SmsState> {
+  @override
+  SmsState build() => const SmsState();
 
   void startSending(int totalCount) {
     state = SmsState(
@@ -282,17 +280,17 @@ final allRecipientsProvider = Provider<List<String>>((ref) {
 
 // SMS History Provider
 final smsHistoryProvider =
-    StateNotifierProvider<SmsHistoryNotifier, List<SmsHistoryEntry>>((ref) {
-  return SmsHistoryNotifier();
-});
+    NotifierProvider<SmsHistoryNotifier, List<SmsHistoryEntry>>(SmsHistoryNotifier.new);
 
-class SmsHistoryNotifier extends StateNotifier<List<SmsHistoryEntry>> {
-  SmsHistoryNotifier() : super([]) {
-    _loadHistory();
-  }
-
+class SmsHistoryNotifier extends Notifier<List<SmsHistoryEntry>> {
   static const String _historyKey = 'sms_history';
   static const int _maxEntries = 100;
+
+  @override
+  List<SmsHistoryEntry> build() {
+    _loadHistory();
+    return [];
+  }
 
   void _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
@@ -330,16 +328,16 @@ class SmsHistoryNotifier extends StateNotifier<List<SmsHistoryEntry>> {
 
 // SMS Templates Provider
 final smsTemplatesProvider =
-    StateNotifierProvider<SmsTemplatesNotifier, List<SmsTemplate>>((ref) {
-  return SmsTemplatesNotifier();
-});
+    NotifierProvider<SmsTemplatesNotifier, List<SmsTemplate>>(SmsTemplatesNotifier.new);
 
-class SmsTemplatesNotifier extends StateNotifier<List<SmsTemplate>> {
-  SmsTemplatesNotifier() : super([]) {
-    _loadTemplates();
-  }
-
+class SmsTemplatesNotifier extends Notifier<List<SmsTemplate>> {
   static const String _templatesKey = 'sms_templates';
+
+  @override
+  List<SmsTemplate> build() {
+    _loadTemplates();
+    return [];
+  }
 
   void _loadTemplates() async {
     final prefs = await SharedPreferences.getInstance();
