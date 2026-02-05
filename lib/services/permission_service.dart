@@ -11,10 +11,7 @@ class PermissionService {
 
     // Add Android-specific permissions
     if (Platform.isAndroid) {
-      permissions.addAll([
-        Permission.phone,
-        Permission.storage,
-      ]);
+      permissions.add(Permission.phone);
     }
 
     Map<Permission, PermissionStatus> statuses = await permissions.request();
@@ -60,17 +57,6 @@ class PermissionService {
   static Future<bool> requestPhonePermission() async {
     if (Platform.isIOS) return true; // iOS doesn't need phone permission
     final status = await Permission.phone.request();
-    return status == PermissionStatus.granted;
-  }
-
-  static Future<bool> checkStoragePermission() async {
-    if (Platform.isIOS) return true; // iOS handles storage differently
-    return await Permission.storage.isGranted;
-  }
-
-  static Future<bool> requestStoragePermission() async {
-    if (Platform.isIOS) return true; // iOS handles storage differently
-    final status = await Permission.storage.request();
     return status == PermissionStatus.granted;
   }
 
@@ -144,8 +130,6 @@ class PermissionService {
         return Icons.sms;
       case Permission.phone:
         return Icons.phone;
-      case Permission.storage:
-        return Icons.storage;
       default:
         return Icons.security;
     }
@@ -159,8 +143,6 @@ class PermissionService {
         return 'Send SMS messages to selected contacts';
       case Permission.phone:
         return 'Access phone features for SMS sending';
-      case Permission.storage:
-        return 'Store app preferences and data';
       default:
         return 'Required for app functionality';
     }

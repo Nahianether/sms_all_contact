@@ -1,28 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Contact permissions -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
-    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
-    
+
     <!-- SMS permissions -->
     <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    
-    <!-- Phone permissions for dual SIM and telephony -->
+
+    <!-- Phone permissions for telephony -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
-    
-    <!-- Internet permissions for package info and future updates -->
+
+    <!-- Internet permissions for package info -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <!-- Storage permissions for shared preferences and app data -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    
-    <!-- Vibration for notification feedback -->
-    <uses-permission android:name="android.permission.VIBRATE" />
-    
+
     <!-- Wake lock to keep app active during SMS sending -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     

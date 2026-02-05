@@ -237,7 +237,25 @@ class SmsProgressWidget extends ConsumerWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              if (!smsState.isCancelled)
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.read(smsStateProvider.notifier).cancelSending();
+                  },
+                  icon: const Icon(Icons.stop),
+                  label: const Text('Cancel Sending'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  ),
+                )
+              else
+                Chip(
+                  avatar: Icon(Icons.cancel, color: Theme.of(context).colorScheme.error, size: 18),
+                  label: const Text('Cancelling...'),
+                ),
+              const SizedBox(height: 16),
               Text(
                 'SMS will be sent with retry logic for failed messages',
                 textAlign: TextAlign.center,

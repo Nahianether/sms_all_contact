@@ -18,12 +18,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _messageController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PermissionService.checkAndRequestInitialPermissions(context);
     });
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,13 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => _showSimSelection(context, ref),
-            icon: const Icon(Icons.sim_card),
-            tooltip: 'Select SIM',
-          ),
-        ],
       ),
       body: smsState.isSending
           ? const SmsProgressWidget()
@@ -76,22 +77,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           const SizedBox(height: 8),
                           TextField(
+                            controller: _messageController,
                             onChanged: (value) => ref.read(messageProvider.notifier).updateMessage(value),
                             maxLines: 4,
-                            maxLength: 160,
                             decoration: const InputDecoration(
                               hintText: 'Type your message here...',
                               border: OutlineInputBorder(),
-                              counterText: '',
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Characters: ${message.length}/160',
+                            'Characters: ${message.length}/160${message.length > 160 ? ' (${(message.length / 160).ceil()} SMS parts)' : ''}',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: message.length > 160 
-                                  ? Theme.of(context).colorScheme.error 
-                                  : Theme.of(context).colorScheme.onSurface,
+                              color: message.length > 160
+                                  ? Theme.of(context).colorScheme.error
+                                  : message.length > 140
+                                      ? Colors.orange
+                                      : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -144,7 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
       floatingActionButton: allRecipients.isNotEmpty && message.isNotEmpty && !smsState.isSending
           ? FloatingActionButton.extended(
-              onPressed: () => _sendSMS(context, ref),
+              onPressed: () => _showSendConfirmation(context, ref),
               icon: const Icon(Icons.send),
               label: Text(Platform.isIOS ? 'Open Messages' : 'Send SMS'),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -153,47 +155,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _showSimSelection(BuildContext context, WidgetRef ref) async {
-    final simCardsAsync = ref.read(simCardsProvider);
-    
-    simCardsAsync.when(
-      data: (simCards) {
-        if (simCards.length <= 1) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Only one SIM card detected')),
-          );
-          return;
-        }
-        
-        showModalBottomSheet(
-          context: context,
-          builder: (context) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Select SIM Card',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                ...simCards.map((sim) => ListTile(
-                  leading: const Icon(Icons.sim_card),
-                  title: Text(sim.displayName),
-                  subtitle: Text(sim.carrierName),
-                  onTap: () {
-                    ref.read(selectedSimProvider.notifier).selectSim(sim);
-                    Navigator.pop(context);
-                  },
-                )),
-              ],
+  void _showSendConfirmation(BuildContext context, WidgetRef ref) {
+    final allRecipients = ref.read(allRecipientsProvider);
+    final message = ref.read(messageProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.send, size: 32),
+        title: const Text('Confirm Send'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Send SMS to ${allRecipients.length} recipient${allRecipients.length > 1 ? 's' : ''}?',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                message.length > 100 ? '${message.substring(0, 100)}...' : message,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            if (message.length > 160) ...[
+              const SizedBox(height: 8),
+              Text(
+                'This message will be sent as ${(message.length / 160).ceil()} SMS parts per recipient.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
-        );
-      },
-      loading: () {},
-      error: (error, stack) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading SIM cards: $error')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _sendSMS(context, ref);
+            },
+            child: Text('Send to ${allRecipients.length}'),
+          ),
+        ],
       ),
     );
   }
@@ -201,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _sendSMS(BuildContext context, WidgetRef ref) async {
     final allRecipients = ref.read(allRecipientsProvider);
     final message = ref.read(messageProvider);
-    
+
     if (allRecipients.isEmpty || message.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add recipients and enter message')),
@@ -218,7 +234,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           message: message,
           recipients: allRecipients,
         );
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -226,8 +242,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               duration: Duration(seconds: 4),
             ),
           );
-          
+
           // Clear fields on iOS since user will handle sending
+          _messageController.clear();
           ref.read(messageProvider.notifier).clearMessage();
           ref.read(selectedContactsProvider.notifier).clearContacts();
           ref.read(manualNumbersProvider.notifier).clearNumbers();
@@ -239,15 +256,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Android SMS sending with retry logic
       await _sendAndroidSMS(context, ref, allRecipients, message);
     }
-    
+
     ref.read(smsStateProvider.notifier).completeSending();
   }
 
   Future<void> _sendAndroidSMS(
-    BuildContext context, 
-    WidgetRef ref, 
-    List<String> recipients, 
-    String message
+    BuildContext context,
+    WidgetRef ref,
+    List<String> recipients,
+    String message,
   ) async {
     // Check all required permissions
     if (!await PermissionService.requestSmsPermission()) {
@@ -265,11 +282,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final telephony = Telephony.instance;
 
     for (String number in recipients) {
+      // Check if user cancelled
+      if (ref.read(smsStateProvider).isCancelled) {
+        break;
+      }
+
       bool success = false;
       int retries = 0;
       const maxRetries = 3;
 
       while (!success && retries < maxRetries) {
+        // Check cancel inside retry loop too
+        if (ref.read(smsStateProvider).isCancelled) break;
+
         try {
           await telephony.sendSms(
             to: number,
@@ -288,22 +313,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
 
       ref.read(smsStateProvider.notifier).updateProgress(
-        sentCount, 
-        failedNumbers.length, 
-        failedNumbers
+        sentCount,
+        failedNumbers.length,
+        failedNumbers,
       );
 
-      // Small delay between messages
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Delay between messages to avoid carrier rate limiting
+      await Future.delayed(const Duration(milliseconds: 1500));
     }
 
     if (context.mounted) {
-      if (failedNumbers.isEmpty) {
+      final wasCancelled = ref.read(smsStateProvider).isCancelled;
+
+      if (wasCancelled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sending cancelled. $sentCount sent, ${recipients.length - sentCount - failedNumbers.length} skipped.'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else if (failedNumbers.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('All $sentCount messages sent successfully!')),
         );
-        
+
         // Clear all fields on complete success
+        _messageController.clear();
         ref.read(messageProvider.notifier).clearMessage();
         ref.read(selectedContactsProvider.notifier).clearContacts();
         ref.read(manualNumbersProvider.notifier).clearNumbers();
@@ -314,11 +349,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             duration: const Duration(seconds: 4),
           ),
         );
-        
+
         // Remove only successful numbers, keep failed ones
-        ref.read(manualNumbersProvider.notifier).removeFailedNumbers(
-          recipients.where((number) => !failedNumbers.contains(number)).toList()
-        );
+        final successfulNumbers = recipients.where((number) => !failedNumbers.contains(number)).toList();
+        ref.read(manualNumbersProvider.notifier).removeNumbers(successfulNumbers);
       }
     }
   }

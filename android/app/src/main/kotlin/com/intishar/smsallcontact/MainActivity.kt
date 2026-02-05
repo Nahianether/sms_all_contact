@@ -1,4 +1,4 @@
-package com.example.sms_all_contact
+package com.intishar.smsallcontact
 
 import io.flutter.embedding.android.FlutterActivity
 

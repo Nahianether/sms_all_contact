@@ -1,4 +1,4 @@
-import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -29,47 +29,6 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
-// SIM Card Provider
-class SimCardInfo {
-  final String displayName;
-  final int subscriptionId;
-  final String carrierName;
-  
-  SimCardInfo({
-    required this.displayName,
-    required this.subscriptionId,
-    required this.carrierName,
-  });
-}
-
-final simCardsProvider = FutureProvider<List<SimCardInfo>>((ref) async {
-  try {
-    // For now, return default SIM. Telephony package has limited SIM support
-    // In a real implementation, you'd check for dual SIM capability
-    return [
-      SimCardInfo(
-        displayName: 'Default SIM',
-        subscriptionId: -1,
-        carrierName: 'Default',
-      ),
-    ];
-  } catch (e) {
-    return [];
-  }
-});
-
-final selectedSimProvider = StateNotifierProvider<SelectedSimNotifier, SimCardInfo?>((ref) {
-  return SelectedSimNotifier();
-});
-
-class SelectedSimNotifier extends StateNotifier<SimCardInfo?> {
-  SelectedSimNotifier() : super(null);
-
-  void selectSim(SimCardInfo? sim) {
-    state = sim;
-  }
-}
-
 // Contacts Provider
 final contactsProvider = StateNotifierProvider<ContactsNotifier, AsyncValue<List<Contact>>>((ref) {
   return ContactsNotifier();
@@ -83,9 +42,12 @@ class ContactsNotifier extends StateNotifier<AsyncValue<List<Contact>>> {
   Future<void> loadContacts() async {
     try {
       if (await PermissionService.requestContactsPermission()) {
-        final contacts = await ContactsService.getContacts();
+        final contacts = await FlutterContacts.getContacts(
+          withProperties: true,
+          withPhoto: false,
+        );
         final contactsWithPhones = contacts
-            .where((contact) => contact.phones != null && contact.phones!.isNotEmpty)
+            .where((contact) => contact.phones.isNotEmpty)
             .toList();
         state = AsyncValue.data(contactsWithPhones);
       } else {
@@ -160,22 +122,27 @@ class ManualNumbersNotifier extends StateNotifier<List<String>> {
     state = [];
   }
 
-  void removeFailedNumbers(List<String> failedNumbers) {
-    state = state.where((number) => !failedNumbers.contains(number)).toList();
+  void removeNumbers(List<String> numbersToRemove) {
+    state = state.where((number) => !numbersToRemove.contains(number)).toList();
   }
 
   List<String> _parseNumbers(String text) {
     final List<String> numbers = [];
     final RegExp phoneRegex = RegExp(r'[\+]?[0-9]{10,15}');
     final matches = phoneRegex.allMatches(text);
-    
+    final existingNormalized = state.map(normalizePhoneNumber).toSet();
+
     for (final match in matches) {
       final number = match.group(0);
-      if (number != null && !state.contains(number)) {
-        numbers.add(number);
+      if (number != null) {
+        final normalized = normalizePhoneNumber(number);
+        if (!existingNormalized.contains(normalized)) {
+          numbers.add(number);
+          existingNormalized.add(normalized);
+        }
       }
     }
-    
+
     return numbers;
   }
 }
@@ -204,6 +171,7 @@ final smsStateProvider = StateNotifierProvider<SmsStateNotifier, SmsState>((ref)
 
 class SmsState {
   final bool isSending;
+  final bool isCancelled;
   final int totalCount;
   final int sentCount;
   final int failedCount;
@@ -212,6 +180,7 @@ class SmsState {
 
   const SmsState({
     this.isSending = false,
+    this.isCancelled = false,
     this.totalCount = 0,
     this.sentCount = 0,
     this.failedCount = 0,
@@ -221,6 +190,7 @@ class SmsState {
 
   SmsState copyWith({
     bool? isSending,
+    bool? isCancelled,
     int? totalCount,
     int? sentCount,
     int? failedCount,
@@ -229,6 +199,7 @@ class SmsState {
   }) {
     return SmsState(
       isSending: isSending ?? this.isSending,
+      isCancelled: isCancelled ?? this.isCancelled,
       totalCount: totalCount ?? this.totalCount,
       sentCount: sentCount ?? this.sentCount,
       failedCount: failedCount ?? this.failedCount,
@@ -259,6 +230,10 @@ class SmsStateNotifier extends StateNotifier<SmsState> {
     );
   }
 
+  void cancelSending() {
+    state = state.copyWith(isCancelled: true);
+  }
+
   void completeSending() {
     state = state.copyWith(isSending: false);
   }
@@ -272,23 +247,32 @@ class SmsStateNotifier extends StateNotifier<SmsState> {
   }
 }
 
+// Phone number normalization - strips spaces, dashes, parentheses for comparison
+String normalizePhoneNumber(String number) {
+  return number.replaceAll(RegExp(r'[\s\-\(\)\.]'), '');
+}
+
 // All Recipients Provider (combines contacts and manual numbers)
 final allRecipientsProvider = Provider<List<String>>((ref) {
   final selectedContacts = ref.watch(selectedContactsProvider);
   final manualNumbers = ref.watch(manualNumbersProvider);
-  
-  List<String> allNumbers = [];
-  
+
+  final Map<String, String> seen = {}; // normalized -> original
+
   // Add contact numbers
   for (var contact in selectedContacts) {
-    if (contact.phones != null && contact.phones!.isNotEmpty) {
-      allNumbers.add(contact.phones!.first.value!);
+    if (contact.phones.isNotEmpty) {
+      final original = contact.phones.first.number;
+      final normalized = normalizePhoneNumber(original);
+      seen.putIfAbsent(normalized, () => original);
     }
   }
-  
+
   // Add manual numbers
-  allNumbers.addAll(manualNumbers);
-  
-  // Remove duplicates
-  return allNumbers.toSet().toList();
+  for (var number in manualNumbers) {
+    final normalized = normalizePhoneNumber(number);
+    seen.putIfAbsent(normalized, () => number);
+  }
+
+  return seen.values.toList();
 });
