@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'services/permission_service.dart';
+import 'models/sms_history.dart';
+import 'models/sms_template.dart';
 
 // Theme Provider
 final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
@@ -276,3 +279,98 @@ final allRecipientsProvider = Provider<List<String>>((ref) {
 
   return seen.values.toList();
 });
+
+// SMS History Provider
+final smsHistoryProvider =
+    StateNotifierProvider<SmsHistoryNotifier, List<SmsHistoryEntry>>((ref) {
+  return SmsHistoryNotifier();
+});
+
+class SmsHistoryNotifier extends StateNotifier<List<SmsHistoryEntry>> {
+  SmsHistoryNotifier() : super([]) {
+    _loadHistory();
+  }
+
+  static const String _historyKey = 'sms_history';
+  static const int _maxEntries = 100;
+
+  void _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getString(_historyKey);
+    if (historyJson != null) {
+      final List<dynamic> decoded = jsonDecode(historyJson);
+      state = decoded.map((e) => SmsHistoryEntry.fromJson(e)).toList();
+    }
+  }
+
+  Future<void> _saveHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
+    await prefs.setString(_historyKey, encoded);
+  }
+
+  void addEntry(SmsHistoryEntry entry) {
+    state = [entry, ...state];
+    if (state.length > _maxEntries) {
+      state = state.sublist(0, _maxEntries);
+    }
+    _saveHistory();
+  }
+
+  void removeEntry(String id) {
+    state = state.where((e) => e.id != id).toList();
+    _saveHistory();
+  }
+
+  void clearHistory() {
+    state = [];
+    _saveHistory();
+  }
+}
+
+// SMS Templates Provider
+final smsTemplatesProvider =
+    StateNotifierProvider<SmsTemplatesNotifier, List<SmsTemplate>>((ref) {
+  return SmsTemplatesNotifier();
+});
+
+class SmsTemplatesNotifier extends StateNotifier<List<SmsTemplate>> {
+  SmsTemplatesNotifier() : super([]) {
+    _loadTemplates();
+  }
+
+  static const String _templatesKey = 'sms_templates';
+
+  void _loadTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final templatesJson = prefs.getString(_templatesKey);
+    if (templatesJson != null) {
+      final List<dynamic> decoded = jsonDecode(templatesJson);
+      state = decoded.map((e) => SmsTemplate.fromJson(e)).toList();
+    }
+  }
+
+  Future<void> _saveTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
+    await prefs.setString(_templatesKey, encoded);
+  }
+
+  void addTemplate(SmsTemplate template) {
+    state = [...state, template];
+    _saveTemplates();
+  }
+
+  void updateTemplate(String id, {String? name, String? messageText}) {
+    state = state.map((t) {
+      if (t.id == id) return t.copyWith(name: name, messageText: messageText);
+      return t;
+    }).toList();
+    _saveTemplates();
+  }
+
+  void removeTemplate(String id) {
+    state = state.where((t) => t.id != id).toList();
+    _saveTemplates();
+  }
+}

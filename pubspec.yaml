@@ -19,6 +19,7 @@ dependencies:
   package_info_plus: ^4.2.0
   telephony: ^0.2.0
   animated_text_kit: ^4.2.2
+  flutter_native_splash: ^2.4.3
 
 dev_dependencies:
   flutter_test:
@@ -44,6 +45,21 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/send_me_icon_v2_1024.png"
+
+flutter_native_splash:
+  color: "#2196F3"
+  image: assets/send_me_icon_v2_1024.png
+  color_dark: "#1565C0"
+  image_dark: assets/send_me_icon_v2_1024.png
+  android_12:
+    color: "#2196F3"
+    icon_background_color: "#2196F3"
+    image: assets/send_me_icon_v2_1024.png
+    color_dark: "#1565C0"
+    icon_background_color_dark: "#1565C0"
+    image_dark: assets/send_me_icon_v2_1024.png
+  ios: true
+  web: false
 
 flutter:
   uses-material-design: true

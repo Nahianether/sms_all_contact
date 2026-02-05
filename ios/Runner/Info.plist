@@ -1,99 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Bulk SMS Sender</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>sms_all_contact</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	
-	<!-- Privacy permissions and usage descriptions -->
-	<key>NSContactsUsageDescription</key>
-	<string>This app needs access to your contacts to send SMS messages to selected contacts from your contact list.</string>
-	
-	<key>NSAppleMusicUsageDescription</key>
-	<string>This app does not use music, but the permission may be required by dependencies.</string>
-	
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app does not access photos, but the permission may be required by dependencies.</string>
-	
-	<key>NSCameraUsageDescription</key>
-	<string>This app does not use the camera, but the permission may be required by dependencies.</string>
-	
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app does not use the microphone, but the permission may be required by dependencies.</string>
-	
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app does not use location services, but the permission may be required by dependencies.</string>
-	
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app does not use location services, but the permission may be required by dependencies.</string>
-	
-	<!-- App Transport Security Settings -->
-	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<key>CFBundleDisplayName</key>
+		<string>Bulk SMS Sender</string>
+		<key>CFBundleExecutable</key>
+		<string>$(EXECUTABLE_NAME)</string>
+		<key>CFBundleIdentifier</key>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>sms_all_contact</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>CFBundleShortVersionString</key>
+		<string>$(FLUTTER_BUILD_NAME)</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>LSRequiresIPhoneOS</key>
 		<true/>
-		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<key>UILaunchStoryboardName</key>
+		<string>LaunchScreen</string>
+		<key>UIMainStoryboardFile</key>
+		<string>Main</string>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationPortraitUpsideDown</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<!-- Privacy permissions and usage descriptions -->
+		<key>NSContactsUsageDescription</key>
+		<string>This app needs access to your contacts to send SMS messages to selected contacts from your contact list.</string>
+		<key>NSAppleMusicUsageDescription</key>
+		<string>This app does not use music, but the permission may be required by dependencies.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app does not access photos, but the permission may be required by dependencies.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>This app does not use the camera, but the permission may be required by dependencies.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app does not use the microphone, but the permission may be required by dependencies.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>This app does not use location services, but the permission may be required by dependencies.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>This app does not use location services, but the permission may be required by dependencies.</string>
+		<!-- App Transport Security Settings -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
+			<key>NSAllowsArbitraryLoadsForMedia</key>
+			<true/>
+			<key>NSAllowsArbitraryLoadsInWebContent</key>
+			<true/>
+		</dict>
+		<!-- Background modes for processing -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>background-processing</string>
+			<string>background-fetch</string>
+		</array>
+		<!-- Required device capabilities -->
+		<key>UIRequiredDeviceCapabilities</key>
+		<array>
+			<string>arm64</string>
+		</array>
+		<!-- Support for dark mode -->
+		<key>UIUserInterfaceStyle</key>
+		<string>Automatic</string>
+		<key>UIStatusBarHidden</key>
+		<false/>
 	</dict>
-	
-	<!-- Background modes for processing -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>background-processing</string>
-		<string>background-fetch</string>
-	</array>
-	
-	<!-- Required device capabilities -->
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	
-	<!-- Support for dark mode -->
-	<key>UIUserInterfaceStyle</key>
-	<string>Automatic</string>
-</dict>
 </plist>

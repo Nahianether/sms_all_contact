@@ -8,7 +8,9 @@ import '../providers.dart';
 import '../widgets/contact_list_widget.dart';
 import '../widgets/number_input_widget.dart';
 import '../widgets/sms_progress_widget.dart';
+import '../widgets/template_selector_widget.dart';
 import '../services/permission_service.dart';
+import '../models/sms_history.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -76,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
+                          TemplateSelectorWidget(messageController: _messageController),
                           TextField(
                             controller: _messageController,
                             onChanged: (value) => ref.read(messageProvider.notifier).updateMessage(value),
@@ -256,6 +259,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Android SMS sending with retry logic
       await _sendAndroidSMS(context, ref, allRecipients, message);
     }
+
+    // Save to history
+    final finalState = ref.read(smsStateProvider);
+    ref.read(smsHistoryProvider.notifier).addEntry(
+          SmsHistoryEntry(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            timestamp: DateTime.now(),
+            messageText: message,
+            recipientCount: allRecipients.length,
+            sentCount: finalState.sentCount,
+            failedCount: finalState.failedCount,
+            failedNumbers: List<String>.from(finalState.failedNumbers),
+            wasCancelled: finalState.isCancelled,
+          ),
+        );
 
     ref.read(smsStateProvider.notifier).completeSending();
   }

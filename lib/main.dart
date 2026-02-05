@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'providers.dart';
 import 'screens/home_screen.dart';
+import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -82,8 +86,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
+    const HistoryScreen(),
     const SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    FlutterNativeSplash.remove();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,9 +109,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.message),
+            icon: Icon(Icons.message_outlined),
             selectedIcon: Icon(Icons.message),
             label: 'SMS',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
