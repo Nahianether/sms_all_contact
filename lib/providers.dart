@@ -164,58 +164,89 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
     final List<String> numbers = [];
     final existingNormalized = state.map(normalizePhoneNumber).toSet();
 
-    // Strip all non-digit, non-plus characters to get raw input
-    // But first, split by common separators if present
-    final hasSeparators = RegExp(r'[,;\n\r\t]').hasMatch(text);
+    final chunks = _extractChunks(text);
 
-    List<String> candidates = [];
+    for (final chunk in chunks) {
+      final digitsOnly = chunk.replaceAll(RegExp(r'[^\d+]'), '');
 
-    if (hasSeparators) {
-      // Split by separators and process each chunk
-      candidates = text.split(RegExp(r'[,;\n\r\t]+'))
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
-    } else {
-      // No separators — try smart detection on the raw digit stream
-      final cleaned = text.replaceAll(RegExp(r'[\s\-\(\)\.]'), '');
-      candidates = _splitConsecutiveNumbers(cleaned);
-    }
-
-    for (final candidate in candidates) {
-      // Extract digits and plus sign only
-      final digitsOnly = candidate.replaceAll(RegExp(r'[^\d+]'), '');
-      if (digitsOnly.isEmpty) continue;
-
-      String? number;
-
-      // +88 followed by 11 digits (BD international format)
-      if (RegExp(r'^\+880\d{10}$').hasMatch(digitsOnly)) {
-        number = digitsOnly;
-      }
-      // 880 followed by 10 digits (without +)
-      else if (RegExp(r'^880\d{10}$').hasMatch(digitsOnly)) {
-        number = '+$digitsOnly';
-      }
-      // 11 digits starting with 0 (BD local format)
-      else if (RegExp(r'^0\d{10}$').hasMatch(digitsOnly)) {
-        number = digitsOnly;
-      }
-      // Any valid phone number (10-15 digits, optional +)
-      else if (RegExp(r'^\+?\d{10,15}$').hasMatch(digitsOnly)) {
-        number = digitsOnly;
-      }
-
-      if (number != null) {
-        final normalized = normalizePhoneNumber(number);
-        if (!existingNormalized.contains(normalized)) {
-          numbers.add(number);
-          existingNormalized.add(normalized);
+      // If chunk is too long, it might be consecutive numbers pasted together
+      if (digitsOnly.length > 15) {
+        final subNumbers = _splitConsecutiveNumbers(digitsOnly);
+        for (final sub in subNumbers) {
+          _addValidNumber(sub, numbers, existingNormalized);
         }
+      } else {
+        _addValidNumber(digitsOnly, numbers, existingNormalized);
       }
     }
 
     return numbers;
+  }
+
+  /// Splits input text into candidate phone number chunks.
+  List<String> _extractChunks(String text) {
+    // If explicit separators (comma, semicolon, newline) exist, split by them
+    if (RegExp(r'[,;\n\r]').hasMatch(text)) {
+      return text
+          .split(RegExp(r'[,;\n\r]+'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+
+    // Check if spaces separate complete phone numbers
+    final spaceParts = text.trim().split(RegExp(r'\s+'));
+    if (spaceParts.length > 1) {
+      final allLookLikeNumbers = spaceParts.every((part) {
+        final digits = part.replaceAll(RegExp(r'[^\d+]'), '');
+        return digits.length >= 10 && digits.length <= 15;
+      });
+      if (allLookLikeNumbers) {
+        return spaceParts;
+      }
+    }
+
+    // No clear separators — strip everything except digits/+ and split consecutive
+    final cleaned = text.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleaned.isEmpty) return [];
+
+    if (cleaned.length > 15) {
+      return _splitConsecutiveNumbers(cleaned);
+    }
+    return [cleaned];
+  }
+
+  /// Validates a number string and adds it if valid and not duplicate.
+  void _addValidNumber(
+      String digitsOnly, List<String> numbers, Set<String> existingNormalized) {
+    if (digitsOnly.isEmpty) return;
+
+    String? number;
+
+    // +880 followed by 10 digits (BD international format)
+    if (RegExp(r'^\+880\d{10}$').hasMatch(digitsOnly)) {
+      number = digitsOnly;
+    }
+    // 880 followed by 10 digits (without +)
+    else if (RegExp(r'^880\d{10}$').hasMatch(digitsOnly)) {
+      number = '+$digitsOnly';
+    }
+    // 11 digits starting with 0 (BD local format)
+    else if (RegExp(r'^0\d{10}$').hasMatch(digitsOnly)) {
+      number = digitsOnly;
+    }
+    // Any valid phone number (10-15 digits, optional +)
+    else if (RegExp(r'^\+?\d{10,15}$').hasMatch(digitsOnly)) {
+      number = digitsOnly;
+    }
+
+    if (number != null) {
+      final normalized = normalizePhoneNumber(number);
+      if (!existingNormalized.contains(normalized)) {
+        numbers.add(number);
+        existingNormalized.add(normalized);
+      }
+    }
   }
 
   /// Splits a continuous string of digits into phone numbers.
@@ -226,7 +257,7 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
 
     while (i < digits.length) {
       // Try +880 followed by 10 digits (total 14 chars with +)
-      if (i < digits.length && digits[i] == '+' &&
+      if (digits[i] == '+' &&
           i + 14 <= digits.length &&
           digits.substring(i + 1, i + 4) == '880') {
         results.add(digits.substring(i, i + 14));
@@ -243,21 +274,26 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
         results.add(digits.substring(i, i + 11));
         i += 11;
       }
-      // Try any 10+ digit sequence (fallback)
-      else if (digits[i] == '+' || RegExp(r'\d').hasMatch(digits[i])) {
-        // Take up to 15 digits as one number
-        int end = i;
-        if (digits[end] == '+') end++;
-        while (end < digits.length && RegExp(r'\d').hasMatch(digits[end]) && end - i <= 15) {
-          end++;
-        }
-        if (end - i >= 10) {
-          results.add(digits.substring(i, end));
-        }
-        i = end;
-      }
+      // Fallback: take up to 15 digits as one number
       else {
-        i++;
+        final isDigit =
+            digits.codeUnitAt(i) >= 48 && digits.codeUnitAt(i) <= 57;
+        if (digits[i] == '+' || isDigit) {
+          int end = i;
+          if (end < digits.length && digits[end] == '+') end++;
+          while (end < digits.length &&
+              digits.codeUnitAt(end) >= 48 &&
+              digits.codeUnitAt(end) <= 57 &&
+              end - i < 15) {
+            end++;
+          }
+          if (end - i >= 10) {
+            results.add(digits.substring(i, end));
+          }
+          i = end == i ? end + 1 : end;
+        } else {
+          i++;
+        }
       }
     }
 
