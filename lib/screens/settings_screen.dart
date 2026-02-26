@@ -41,11 +41,20 @@ class SettingsScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    leading: const Icon(Icons.brightness_6),
-                    title: const Text('Theme'),
-                    subtitle: Text(_getThemeName(themeMode)),
-                    trailing: SegmentedButton<ThemeMode>(
+                  Row(
+                    children: [
+                      const Icon(Icons.brightness_6),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Theme',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
                       segments: const [
                         ButtonSegment<ThemeMode>(
                           value: ThemeMode.light,
@@ -157,19 +166,19 @@ class SettingsScreen extends ConsumerWidget {
                   _buildInfoTile(
                     context,
                     'Developer',
-                    'Your Name',
+                    'Intishar-Ul Islam(Ether)',
                     Icons.code,
                   ),
                   _buildInfoTile(
                     context,
                     'Email',
-                    'developer@example.com',
+                    'nahianether3@gmail.com',
                     Icons.email,
                   ),
                   _buildInfoTile(
                     context,
                     'GitHub',
-                    'github.com/yourhandle',
+                    'github.com/nahianether',
                     Icons.code_rounded,
                   ),
                 ],

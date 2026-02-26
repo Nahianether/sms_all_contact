@@ -12,10 +12,10 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_contacts: ^1.1.9+2
-  flutter_sms: ^3.0.0
+  flutter_sms: ^2.3.3
   permission_handler: ^12.0.1
   flutter_riverpod: ^3.2.1
-  shared_preferences: ^2.5.4
+  shared_preferences: ^2.4.0
   package_info_plus: ^9.0.0
   telephony: ^0.2.0
   animated_text_kit: ^4.2.2

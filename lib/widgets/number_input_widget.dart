@@ -25,37 +25,33 @@ class _NumberInputWidgetState extends ConsumerState<NumberInputWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: 'Paste numbers here (e.g., +1234567890, +0987654321)',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: _controller.text.isNotEmpty ? _addNumbers : null,
-                        icon: const Icon(Icons.add),
-                        tooltip: 'Add Numbers',
-                      ),
-                      IconButton(
-                        onPressed: _controller.text.isNotEmpty ? _clearInput : null,
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Clear Input',
-                      ),
-                    ],
-                  ),
-                ),
-                maxLines: 3,
-                onChanged: (value) {
-                  setState(() {});
-                },
-              ),
-            ),
-          ],
+        TextField(
+          controller: _controller,
+          decoration: InputDecoration(
+            hintText: 'Paste numbers here (e.g., +1234567890)',
+            border: const OutlineInputBorder(),
+            suffixIcon: _controller.text.isNotEmpty
+                ? IconButton(
+                    onPressed: _clearInput,
+                    icon: const Icon(Icons.close, size: 18),
+                    tooltip: 'Clear Input',
+                  )
+                : null,
+          ),
+          maxLines: 2,
+          onChanged: (value) {
+            setState(() {});
+          },
+          onSubmitted: (_) => _addNumbers(),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: _controller.text.isNotEmpty ? _addNumbers : null,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Numbers'),
+          ),
         ),
         if (manualNumbers.isNotEmpty) ...[
           const SizedBox(height: 12),

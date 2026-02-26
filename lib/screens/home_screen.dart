@@ -5,7 +5,8 @@ import 'package:telephony/telephony.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'dart:io';
 import '../providers.dart';
-import '../widgets/contact_list_widget.dart';
+import '../widgets/contact_picker_sheet.dart';
+import '../widgets/selected_contacts_chips.dart';
 import '../widgets/number_input_widget.dart';
 import '../widgets/sms_progress_widget.dart';
 import '../widgets/template_selector_widget.dart';
@@ -36,6 +37,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  Widget _buildStep(BuildContext context, String number, String text, bool done) {
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: done
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+          child: Center(
+            child: done
+                ? Icon(Icons.check, size: 14, color: Theme.of(context).colorScheme.onPrimary)
+                : Text(
+                    number,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              decoration: done ? TextDecoration.lineThrough : null,
+              color: done
+                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openContactPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => const ContactPickerSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final allRecipients = ref.watch(allRecipientsProvider);
@@ -61,98 +115,152 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: smsState.isSending
           ? const SmsProgressWidget()
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Message',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TemplateSelectorWidget(messageController: _messageController),
-                          TextField(
-                            controller: _messageController,
-                            onChanged: (value) => ref.read(messageProvider.notifier).updateMessage(value),
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText: 'Type your message here...',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Characters: ${message.length}/160${message.length > 160 ? ' (${(message.length / 160).ceil()} SMS parts)' : ''}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: message.length > 160
-                                  ? Theme.of(context).colorScheme.error
-                                  : message.length > 140
-                                      ? Colors.orange
-                                      : Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // How to use guide
+                  if (allRecipients.isEmpty || message.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Card(
+                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.people,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
                               Text(
-                                'Recipients',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                'How to send',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const Spacer(),
-                              Chip(
-                                label: Text('${allRecipients.length}'),
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              ),
+                              const SizedBox(height: 8),
+                              _buildStep(context, '1', 'Add recipients via contacts or paste numbers', allRecipients.isNotEmpty),
+                              const SizedBox(height: 4),
+                              _buildStep(context, '2', 'Type your message below', message.isNotEmpty),
+                              const SizedBox(height: 4),
+                              _buildStep(context, '3', Platform.isIOS ? 'Tap "Open Messages" button to send' : 'Tap "Send SMS" button to send', false),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          const NumberInputWidget(),
-                        ],
+                        ),
+                      ),
+                    ),
+                  // Recipients section (TOP)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.people,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Recipients',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Chip(
+                                  label: Text('${allRecipients.length}'),
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _openContactPicker(context),
+                                icon: const Icon(Icons.contacts),
+                                label: const Text('Select Contacts'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const SelectedContactsChips(),
+                            const SizedBox(height: 8),
+                            const NumberInputWidget(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: ContactListWidget(),
+                  // Message section (BOTTOM)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Message',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TemplateSelectorWidget(messageController: _messageController),
+                            TextField(
+                              controller: _messageController,
+                              onChanged: (value) => ref.read(messageProvider.notifier).updateMessage(value),
+                              maxLines: 4,
+                              decoration: const InputDecoration(
+                                hintText: 'Type your message here...',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Characters: ${message.length}/160${message.length > 160 ? ' (${(message.length / 160).ceil()} SMS parts)' : ''}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: message.length > 160
+                                    ? Theme.of(context).colorScheme.error
+                                    : message.length > 140
+                                        ? Colors.orange
+                                        : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+      bottomNavigationBar: allRecipients.isNotEmpty && message.isNotEmpty && !smsState.isSending
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: FilledButton.icon(
+                onPressed: () => _showSendConfirmation(context, ref),
+                icon: const Icon(Icons.send_rounded),
+                label: Text(
+                  Platform.isIOS
+                      ? 'Open Messages (${allRecipients.length})'
+                      : 'Send SMS (${allRecipients.length})',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-      floatingActionButton: allRecipients.isNotEmpty && message.isNotEmpty && !smsState.isSending
-          ? FloatingActionButton.extended(
-              onPressed: () => _showSendConfirmation(context, ref),
-              icon: const Icon(Icons.send),
-              label: Text(Platform.isIOS ? 'Open Messages' : 'Send SMS'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
             )
           : null,
     );
