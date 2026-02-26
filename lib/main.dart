@@ -74,16 +74,14 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-class MainNavigationScreen extends StatefulWidget {
+class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-
+class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const HistoryScreen(),
@@ -98,14 +96,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(selectedTabProvider);
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _screens[currentIndex],
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          ref.read(selectedTabProvider.notifier).setTab(index);
         },
         destinations: const [
           NavigationDestination(

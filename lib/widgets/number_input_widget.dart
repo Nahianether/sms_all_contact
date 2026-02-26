@@ -106,7 +106,7 @@ class _NumberInputWidgetState extends ConsumerState<NumberInputWidget> {
         ],
         const SizedBox(height: 8),
         Text(
-          'Tip: You can paste multiple numbers separated by spaces, commas, or new lines. The app will automatically detect valid phone numbers.',
+          'Tip: Paste numbers in any format — comma-separated, one per line, or even consecutive (e.g., 016877229620171234567). 11-digit and +880 numbers are auto-detected.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             fontStyle: FontStyle.italic,
@@ -119,14 +119,16 @@ class _NumberInputWidgetState extends ConsumerState<NumberInputWidget> {
   void _addNumbers() {
     final text = _controller.text.trim();
     if (text.isNotEmpty) {
-      ref.read(manualNumbersProvider.notifier).addNumbers(text);
+      final count = ref.read(manualNumbersProvider.notifier).addNumbers(text);
       _controller.clear();
       setState(() {});
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Numbers added successfully'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(count > 0
+              ? '$count number${count > 1 ? 's' : ''} added'
+              : 'No valid numbers found'),
+          duration: const Duration(seconds: 2),
         ),
       );
     }

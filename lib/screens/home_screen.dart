@@ -96,6 +96,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final message = ref.watch(messageProvider);
     final smsState = ref.watch(smsStateProvider);
 
+    // Listen for resend trigger from history screen
+    ref.listen<String?>(resendTriggerProvider, (previous, next) {
+      if (next != null) {
+        _messageController.text = next;
+        ref.read(resendTriggerProvider.notifier).clear();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: AnimatedTextKit(
@@ -382,6 +390,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             sentCount: finalState.sentCount,
             failedCount: finalState.failedCount,
             failedNumbers: List<String>.from(finalState.failedNumbers),
+            recipientNumbers: List<String>.from(allRecipients),
             wasCancelled: finalState.isCancelled,
           ),
         );

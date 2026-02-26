@@ -72,7 +72,7 @@ class HistoryScreen extends ConsumerWidget {
                 final entry = history[index];
                 return _HistoryCard(
                   entry: entry,
-                  onTap: () => _showDetailDialog(context, entry),
+                  onTap: () => _showDetailDialog(context, ref, entry),
                   onDismiss: () {
                     ref
                         .read(smsHistoryProvider.notifier)
@@ -118,10 +118,10 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  void _showDetailDialog(BuildContext context, SmsHistoryEntry entry) {
+  void _showDetailDialog(BuildContext context, WidgetRef ref, SmsHistoryEntry entry) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
             _statusIcon(entry),
@@ -129,7 +129,7 @@ class HistoryScreen extends ConsumerWidget {
             Expanded(
               child: Text(
                 _formatDate(entry.timestamp),
-                style: Theme.of(context).textTheme.titleSmall,
+                style: Theme.of(dialogContext).textTheme.titleSmall,
               ),
             ),
           ],
@@ -141,7 +141,7 @@ class HistoryScreen extends ConsumerWidget {
             children: [
               Text(
                 'Message',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                style: Theme.of(dialogContext).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -150,38 +150,38 @@ class HistoryScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: Theme.of(dialogContext).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   entry.messageText,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(dialogContext).textTheme.bodyMedium,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 'Statistics',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                style: Theme.of(dialogContext).textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
-              _statRow(context, 'Recipients', '${entry.recipientCount}',
-                  Icons.people, Theme.of(context).colorScheme.primary),
-              _statRow(context, 'Sent', '${entry.sentCount}',
+              _statRow(dialogContext, 'Recipients', '${entry.recipientCount}',
+                  Icons.people, Theme.of(dialogContext).colorScheme.primary),
+              _statRow(dialogContext, 'Sent', '${entry.sentCount}',
                   Icons.check_circle, Colors.green),
-              _statRow(context, 'Failed', '${entry.failedCount}', Icons.error,
+              _statRow(dialogContext, 'Failed', '${entry.failedCount}', Icons.error,
                   Colors.red),
               if (entry.wasCancelled)
-                _statRow(context, 'Status', 'Cancelled', Icons.cancel,
+                _statRow(dialogContext, 'Status', 'Cancelled', Icons.cancel,
                     Colors.orange),
               if (entry.failedNumbers.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
                   'Failed Numbers',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  style: Theme.of(dialogContext).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.error,
+                        color: Theme.of(dialogContext).colorScheme.error,
                       ),
                 ),
                 const SizedBox(height: 4),
@@ -190,7 +190,7 @@ class HistoryScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Text(
                       number,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
                             fontFamily: 'monospace',
                           ),
                     ),
@@ -202,12 +202,44 @@ class HistoryScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Close'),
           ),
+          if (entry.recipientNumbers.isNotEmpty)
+            FilledButton.icon(
+              onPressed: () {
+                _resendEntry(ref, entry);
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Loaded ${entry.recipientNumbers.length} recipients and message'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.replay, size: 18),
+              label: const Text('Resend'),
+            ),
         ],
       ),
     );
+  }
+
+  void _resendEntry(WidgetRef ref, SmsHistoryEntry entry) {
+    // Clear existing data
+    ref.read(selectedContactsProvider.notifier).clearContacts();
+    ref.read(manualNumbersProvider.notifier).clearNumbers();
+
+    // Load recipients as manual numbers
+    for (final number in entry.recipientNumbers) {
+      ref.read(manualNumbersProvider.notifier).addNumbers(number);
+    }
+
+    // Load message
+    ref.read(messageProvider.notifier).updateMessage(entry.messageText);
+    ref.read(resendTriggerProvider.notifier).trigger(entry.messageText);
+
+    // Switch to SMS tab
+    ref.read(selectedTabProvider.notifier).setTab(0);
   }
 
   Widget _statRow(BuildContext context, String label, String value,

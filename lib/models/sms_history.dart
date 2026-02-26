@@ -6,6 +6,7 @@ class SmsHistoryEntry {
   final int sentCount;
   final int failedCount;
   final List<String> failedNumbers;
+  final List<String> recipientNumbers;
   final bool wasCancelled;
 
   const SmsHistoryEntry({
@@ -16,6 +17,7 @@ class SmsHistoryEntry {
     required this.sentCount,
     required this.failedCount,
     required this.failedNumbers,
+    this.recipientNumbers = const [],
     this.wasCancelled = false,
   });
 
@@ -28,6 +30,9 @@ class SmsHistoryEntry {
       sentCount: json['sentCount'] as int,
       failedCount: json['failedCount'] as int,
       failedNumbers: List<String>.from(json['failedNumbers'] as List),
+      recipientNumbers: json['recipientNumbers'] != null
+          ? List<String>.from(json['recipientNumbers'] as List)
+          : const [],
       wasCancelled: json['wasCancelled'] as bool? ?? false,
     );
   }
@@ -41,6 +46,7 @@ class SmsHistoryEntry {
       'sentCount': sentCount,
       'failedCount': failedCount,
       'failedNumbers': failedNumbers,
+      'recipientNumbers': recipientNumbers,
       'wasCancelled': wasCancelled,
     };
   }

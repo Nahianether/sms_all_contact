@@ -7,6 +7,36 @@ import 'services/permission_service.dart';
 import 'models/sms_history.dart';
 import 'models/sms_template.dart';
 
+// Resend Trigger Provider - set to a message string to trigger resend in HomeScreen
+final resendTriggerProvider =
+    NotifierProvider<ResendTriggerNotifier, String?>(ResendTriggerNotifier.new);
+
+class ResendTriggerNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void trigger(String message) {
+    state = message;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+// Tab Navigation Provider
+final selectedTabProvider =
+    NotifierProvider<SelectedTabNotifier, int>(SelectedTabNotifier.new);
+
+class SelectedTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setTab(int index) {
+    state = index;
+  }
+}
+
 // Theme Provider
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);
 
@@ -112,9 +142,10 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
   @override
   List<String> build() => [];
 
-  void addNumbers(String numbersText) {
+  int addNumbers(String numbersText) {
     final numbers = _parseNumbers(numbersText);
     state = [...state, ...numbers];
+    return numbers.length;
   }
 
   void removeNumber(String number) {
@@ -131,12 +162,50 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
 
   List<String> _parseNumbers(String text) {
     final List<String> numbers = [];
-    final RegExp phoneRegex = RegExp(r'[\+]?[0-9]{10,15}');
-    final matches = phoneRegex.allMatches(text);
     final existingNormalized = state.map(normalizePhoneNumber).toSet();
 
-    for (final match in matches) {
-      final number = match.group(0);
+    // Strip all non-digit, non-plus characters to get raw input
+    // But first, split by common separators if present
+    final hasSeparators = RegExp(r'[,;\n\r\t]').hasMatch(text);
+
+    List<String> candidates = [];
+
+    if (hasSeparators) {
+      // Split by separators and process each chunk
+      candidates = text.split(RegExp(r'[,;\n\r\t]+'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    } else {
+      // No separators — try smart detection on the raw digit stream
+      final cleaned = text.replaceAll(RegExp(r'[\s\-\(\)\.]'), '');
+      candidates = _splitConsecutiveNumbers(cleaned);
+    }
+
+    for (final candidate in candidates) {
+      // Extract digits and plus sign only
+      final digitsOnly = candidate.replaceAll(RegExp(r'[^\d+]'), '');
+      if (digitsOnly.isEmpty) continue;
+
+      String? number;
+
+      // +88 followed by 11 digits (BD international format)
+      if (RegExp(r'^\+880\d{10}$').hasMatch(digitsOnly)) {
+        number = digitsOnly;
+      }
+      // 880 followed by 10 digits (without +)
+      else if (RegExp(r'^880\d{10}$').hasMatch(digitsOnly)) {
+        number = '+$digitsOnly';
+      }
+      // 11 digits starting with 0 (BD local format)
+      else if (RegExp(r'^0\d{10}$').hasMatch(digitsOnly)) {
+        number = digitsOnly;
+      }
+      // Any valid phone number (10-15 digits, optional +)
+      else if (RegExp(r'^\+?\d{10,15}$').hasMatch(digitsOnly)) {
+        number = digitsOnly;
+      }
+
       if (number != null) {
         final normalized = normalizePhoneNumber(number);
         if (!existingNormalized.contains(normalized)) {
@@ -147,6 +216,52 @@ class ManualNumbersNotifier extends Notifier<List<String>> {
     }
 
     return numbers;
+  }
+
+  /// Splits a continuous string of digits into phone numbers.
+  /// Detects +880/880 prefixed numbers and 11-digit BD local numbers.
+  List<String> _splitConsecutiveNumbers(String digits) {
+    final List<String> results = [];
+    int i = 0;
+
+    while (i < digits.length) {
+      // Try +880 followed by 10 digits (total 14 chars with +)
+      if (i < digits.length && digits[i] == '+' &&
+          i + 14 <= digits.length &&
+          digits.substring(i + 1, i + 4) == '880') {
+        results.add(digits.substring(i, i + 14));
+        i += 14;
+      }
+      // Try 880 followed by 10 digits (13 digits)
+      else if (i + 13 <= digits.length &&
+          digits.substring(i, i + 3) == '880') {
+        results.add(digits.substring(i, i + 13));
+        i += 13;
+      }
+      // Try 11-digit number starting with 0
+      else if (i + 11 <= digits.length && digits[i] == '0') {
+        results.add(digits.substring(i, i + 11));
+        i += 11;
+      }
+      // Try any 10+ digit sequence (fallback)
+      else if (digits[i] == '+' || RegExp(r'\d').hasMatch(digits[i])) {
+        // Take up to 15 digits as one number
+        int end = i;
+        if (digits[end] == '+') end++;
+        while (end < digits.length && RegExp(r'\d').hasMatch(digits[end]) && end - i <= 15) {
+          end++;
+        }
+        if (end - i >= 10) {
+          results.add(digits.substring(i, end));
+        }
+        i = end;
+      }
+      else {
+        i++;
+      }
+    }
+
+    return results;
   }
 }
 
