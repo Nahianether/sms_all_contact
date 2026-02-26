@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_sms/flutter_sms.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:telephony/telephony.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'dart:io';
@@ -341,10 +341,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (Platform.isIOS) {
       try {
-        await sendSMS(
-          message: message,
-          recipients: allRecipients,
+        final recipientsStr = allRecipients.join(',');
+        final uri = Uri(
+          scheme: 'sms',
+          path: recipientsStr,
+          queryParameters: {'body': message},
         );
+        await launchUrl(uri);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
